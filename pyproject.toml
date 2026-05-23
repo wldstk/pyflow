@@ -1,0 +1,21 @@
+license = "AGPL-3.0-or-later"
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.pyright]
+pythonVersion = "3.12"
+pythonPlatform = "Linux"
+typeCheckingMode = "standard"
+include = ["backend", "register.py"]
+exclude = [
+    "backend/projects/*/nodes",
+    "backend/projects/_template/nodes",
+    "frontend",
+]
+reportMissingTypeStubs = false

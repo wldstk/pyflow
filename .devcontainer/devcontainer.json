@@ -1,0 +1,31 @@
+{
+  "name": "PyFlow",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "forwardPorts": [5000, 3000],
+  "portsAttributes": {
+    "5000": { "label": "Flask API",      "onAutoForward": "notify" },
+    "3000": { "label": "React Frontend", "onAutoForward": "openBrowser" }
+  },
+  "postCreateCommand": "cd backend && pip install -r requirements.txt && cd ../frontend && npm install",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true,
+        "[python]": { "editor.defaultFormatter": "ms-python.black-formatter" }
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "dsznajder.es7-react-js-snippets"
+      ]
+    }
+  },
+  "remoteUser": "root"
+}
