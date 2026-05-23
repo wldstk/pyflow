@@ -82,7 +82,7 @@ export default function Toolbar({ loading, backendOk, lastFetch, onRefresh, proj
 
   return (
     <header style={s.bar}>
-      <span style={s.logo}>wildstack</span>
+      <span style={s.logo}>pyflow</span>
       <div style={s.divider} />
 
       <ProjectSelector
