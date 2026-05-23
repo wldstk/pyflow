@@ -22,6 +22,7 @@
 import React, { memo, useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
+  STATUS,
   nodeBase, nodeHeader, nodeBody,
   labelStyle, descStyle,
   headlineStyle, headlineValue, headlineUnit, headlineLabel,
@@ -196,7 +197,7 @@ function GenericNode({ data, type }) {
         background:     alertActive ? '#fef3c7' : nodeHeader.background,
         borderBottom:   `1px solid ${alertActive ? '#fde68a' : '#f0f2f5'}`,
       }}>
-        <div style={statusDot(status)} />
+        <div style={statusDot(status)} className={status === 'running' ? 'status-dot-pulse' : ''} />
         {icon && (
           <span style={{ fontSize: '12px', lineHeight: 1, marginRight: '4px', flexShrink: 0 }}>
             {icon}
@@ -270,7 +271,7 @@ function GenericNode({ data, type }) {
         {/* Expandable detail panel */}
         {showDetail && <DetailPanel detail={detail} />}
 
-        <span style={statusBadge(status)}>{status}</span>
+        <span style={statusBadge(status)}>{STATUS[status]?.label ?? status}</span>
       </div>
     </div>
   );
