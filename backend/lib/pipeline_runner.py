@@ -27,6 +27,7 @@ edges:
 
 import json
 import traceback
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -117,6 +118,31 @@ def _edge_style(edge_def: dict[str, Any]) -> str:
     return "animated" if edge_def.get("animated") else "solid"
 
 
+def _build_edges(
+    edge_defs: list[dict[str, Any]],
+    node_outputs: dict[str, dict[str, Any]],
+    animated_color: str,
+    static_color: str,
+) -> list[dict[str, Any]]:
+    rf_edges: list[dict[str, Any]] = []
+    for e in edge_defs:
+        source_id = str(e["source"])
+        style = _edge_style(e)
+        stroke = animated_color if style == "animated" else static_color
+        flow_count = _flow_count(node_outputs.get(source_id, {})) if node_outputs else None
+        rf_edges.append(
+            RFEdge(
+                id=e.get("id", f"e{e['source']}-{e['target']}"),
+                source=source_id,
+                target=str(e["target"]),
+                type="flowEdge",
+                markerEnd=MarkerEnd(type="arrowclosed", color=stroke),
+                data=EdgeData(edgeStyle=style, strokeColor=stroke, flowCount=flow_count),
+            ).model_dump()
+        )
+    return rf_edges
+
+
 # ── Runner ─────────────────────────────────────────────────────
 
 
@@ -155,26 +181,91 @@ def run(project_dir: Path) -> PipelineGraph:
 
         rf_nodes.append(_build_rf_node(node_id, position, result))
 
-    rf_edges: list[RFEdge] = []
-    for e in raw_pipeline.get("edges", []):
-        source_id: str = str(e["source"])
-        style = _edge_style(e)
-        stroke = animated_color if style == "animated" else static_color
-        flow_count = _flow_count(node_outputs.get(source_id, {}))
-
-        rf_edges.append(
-            RFEdge(
-                id=e.get("id", f"e{e['source']}-{e['target']}"),
-                source=source_id,
-                target=str(e["target"]),
-                type="flowEdge",
-                markerEnd=MarkerEnd(type="arrowclosed", color=stroke),
-                data=EdgeData(
-                    edgeStyle=style,
-                    strokeColor=stroke,
-                    flowCount=flow_count,
-                ),
-            )
-        )
+    edge_defs = raw_pipeline.get("edges", [])
+    rf_edges_dicts = _build_edges(edge_defs, node_outputs, animated_color, static_color)
+    rf_edges = [RFEdge.model_validate(e) for e in rf_edges_dicts]
 
     return PipelineGraph(nodes=rf_nodes, edges=rf_edges)
+
+
+def run_streaming(project_dir: Path) -> Generator[dict[str, Any], None, None]:
+    """Yield SSE event dicts as the pipeline executes node by node."""
+    pipeline_path = project_dir / "pipeline.yml"
+    nodes_dir = project_dir / "nodes"
+
+    config = _load_config(project_dir)
+    theme = config.theme
+    animated_color = theme.animatedEdge
+    static_color = theme.staticEdge
+
+    with open(pipeline_path, encoding="utf-8") as f:
+        raw_pipeline: Any = yaml.safe_load(f)
+
+    node_defs: list[dict[str, Any]] = raw_pipeline.get("nodes", [])
+    edge_defs: list[dict[str, Any]] = raw_pipeline.get("edges", [])
+
+    # Build initial pending nodes from spec metadata (no execution yet)
+    rf_nodes_init: list[dict[str, Any]] = []
+    for node_def in node_defs:
+        node_id = str(node_def["id"])
+        spec_name: str = node_def["spec"]
+        position = node_def.get("position", {"x": 0, "y": 0})
+        try:
+            spec = node_runner.load_spec(nodes_dir, spec_name)
+            node_type, label, description, icon = spec.node_type, spec.label, spec.description, spec.icon
+        except Exception:
+            node_type, label, description, icon = "default", spec_name, "", ""
+
+        rf_nodes_init.append(
+            RFNode(
+                id=node_id,
+                type=node_type,
+                position=Position(x=float(position.get("x", 0)), y=float(position.get("y", 0))),
+                data=NodeData(
+                    label=label,
+                    description=description,
+                    status="pending",
+                    stats={},
+                    headline=None,
+                    detail={},
+                    icon=icon,
+                    elapsed_ms=None,
+                ),
+            ).model_dump()
+        )
+
+    yield {
+        "type": "init",
+        "nodes": rf_nodes_init,
+        "edges": _build_edges(edge_defs, {}, animated_color, static_color),
+    }
+
+    # Execute nodes sequentially, streaming status updates
+    node_outputs: dict[str, dict[str, Any]] = {}
+
+    for node_def in node_defs:
+        node_id = str(node_def["id"])
+        spec_name = node_def["spec"]
+        position = node_def.get("position", {"x": 0, "y": 0})
+        params: dict[str, Any] = node_def.get("params") or {}
+
+        inputs: dict[str, Any] = {}
+        src = node_def.get("input_from")
+        if isinstance(src, str):
+            inputs.update(node_outputs.get(src, {}))
+        elif isinstance(src, list):
+            for s in src:
+                inputs.update(node_outputs.get(str(s), {}))
+
+        yield {"type": "node_update", "node_id": node_id, "data": {"status": "running"}}
+
+        result = _safe_execute(nodes_dir, spec_name, inputs, params)
+        node_outputs[node_id] = result.payload
+
+        rf_node = _build_rf_node(node_id, position, result)
+        yield {"type": "node_update", "node_id": node_id, "data": rf_node.data.model_dump()}
+
+    yield {
+        "type": "pipeline_done",
+        "edges": _build_edges(edge_defs, node_outputs, animated_color, static_color),
+    }

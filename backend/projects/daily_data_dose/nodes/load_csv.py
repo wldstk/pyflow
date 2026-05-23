@@ -15,4 +15,5 @@ def run(inputs: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
         reader = csv.DictReader(f)
         columns = list(reader.fieldnames or [])
         rows = [dict(row) for row in reader]
+
     return {"rows": rows, "columns": columns}

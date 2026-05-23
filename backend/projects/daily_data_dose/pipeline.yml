@@ -1,41 +1,41 @@
 nodes:
   - id: "1"
     spec: load_csv
-    position: {x: 50, y: 220}
+    position: { x: 50, y: 220 }
     params:
       filename: weather.csv
 
   - id: "2"
     spec: parse_types
-    position: {x: 320, y: 220}
+    position: { x: 320, y: 220 }
     input_from: "1"
 
   - id: "3"
     spec: clean_data
-    position: {x: 590, y: 220}
+    position: { x: 590, y: 220 }
     input_from: "2"
 
   - id: "4"
     spec: compute_averages
-    position: {x: 860, y: 100}
+    position: { x: 860, y: 100 }
     input_from: "3"
 
   - id: "5"
     spec: detect_anomalies
-    position: {x: 860, y: 360}
+    position: { x: 860, y: 360 }
     input_from: "3"
     params:
       z_threshold: 2.5
 
   - id: "6"
     spec: summary
-    position: {x: 1130, y: 220}
+    position: { x: 1300, y: 220 }
     input_from: ["4", "5"]
 
 edges:
-  - {id: e1-2, source: "1", target: "2", style: animated}
-  - {id: e2-3, source: "2", target: "3", style: solid}
-  - {id: e3-4, source: "3", target: "4", style: animated}
-  - {id: e3-5, source: "3", target: "5", style: dashed}
-  - {id: e4-6, source: "4", target: "6", style: dotted}
-  - {id: e5-6, source: "5", target: "6", style: dotted}
+  - { id: e1-2, source: "1", target: "2", style: animated }
+  - { id: e2-3, source: "2", target: "3", style: solid }
+  - { id: e3-4, source: "3", target: "4", style: animated }
+  - { id: e3-5, source: "3", target: "5", style: dashed }
+  - { id: e4-6, source: "4", target: "6", style: dotted }
+  - { id: e5-6, source: "5", target: "6", style: dotted }

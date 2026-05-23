@@ -1,24 +1,37 @@
 // ── Status config ──────────────────────────────────────────────
 export const STATUS = {
   done:    { pill: '#22c55e', pillBg: '#dcfce7', text: '#15803d', label: '✓ done'    },
-  active:  { pill: '#f59e0b', pillBg: '#fef3c7', text: '#b45309', label: '● running' },
+  running: { pill: '#f59e0b', pillBg: '#fef3c7', text: '#b45309', label: '● running', glow: true },
+  active:  { pill: '#f59e0b', pillBg: '#fef3c7', text: '#b45309', label: '● running', glow: true },
   pending: { pill: '#94a3b8', pillBg: '#f1f5f9', text: '#64748b', label: '○ pending' },
   error:   { pill: '#ef4444', pillBg: '#fee2e2', text: '#b91c1c', label: '✕ error'   },
+};
+
+// Border colours keyed by status.
+// 'done' uses the project-theme CSS variable so it adapts per project.json.
+// 'running' matches STATUS.running.pill and the running edge colour (#f59e0b).
+const _borderColor = {
+  done:    'var(--animated-edge)',
+  running: '#f59e0b',
+  error:   '#fca5a5',
+  active:  '#f59e0b',
 };
 
 // ── Card shell ─────────────────────────────────────────────────
 export const nodeBase = (status = 'pending') => ({
   background: '#ffffff',
-  border: `1.5px solid ${status === 'error' ? '#fca5a5' : '#e2e6ea'}`,
+  border: `1.5px solid ${_borderColor[status] ?? '#e2e6ea'}`,
   borderRadius: '10px',
   padding: 0,
   minWidth: '220px',
   maxWidth: '260px',
   fontFamily: 'var(--font-body)',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04)',
+  boxShadow: status === 'running'
+    ? '0 2px 14px rgba(245,159,11,0.28), 0 1px 2px rgba(0,0,0,0.04)'
+    : '0 2px 8px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04)',
   overflow: 'hidden',
   cursor: 'default',
-  transition: 'box-shadow 0.15s, border-color 0.15s',
+  transition: 'box-shadow 0.25s, border-color 0.25s',
 });
 
 // ── Node header ────────────────────────────────────────────────
@@ -119,7 +132,7 @@ export const statusDot = (status) => ({
   borderRadius: '50%',
   flexShrink: 0,
   background: STATUS[status]?.pill ?? '#94a3b8',
-  boxShadow: status === 'active' ? '0 0 6px #f59e0b' : 'none',
+  boxShadow: STATUS[status]?.glow ? `0 0 6px ${STATUS[status].pill}` : 'none',
 });
 
 // ── Status badge ───────────────────────────────────────────────

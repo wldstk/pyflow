@@ -19,9 +19,9 @@ const edgeTypes = { flowEdge: FlowEdge };
 
 const minimapColor = (node) => {
   const s = node.data?.status;
-  if (s === 'done')   return '#22c55e';
-  if (s === 'active') return '#f59e0b';
-  if (s === 'error')  return '#ef4444';
+  if (s === 'done')                    return '#22c55e';
+  if (s === 'running' || s === 'active') return '#f59e0b';
+  if (s === 'error')                   return '#ef4444';
   return '#cbd5e1';
 };
 
