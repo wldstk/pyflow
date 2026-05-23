@@ -1,0 +1,127 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* ── Design tokens — defaults (overridden per-project via JS) ── */
+:root {
+  /* Surfaces */
+  --surface:        #ffffff;
+  --surface-header: #fafbfc;
+  --border:         #e2e6ea;
+  --border-hover:   #c8d0d8;
+
+  /* Typography */
+  --text-primary:   #1a1f2e;
+  --text-secondary: #3d4a5c;
+  --text-muted:     #8a95a3;
+
+  /* Project-switchable accent (default: blue) */
+  --accent:         #2563eb;
+  --accent-dim:     #dbeafe;
+
+  /* Project-switchable edge colours */
+  --animated-edge:  #16a34a;
+  --static-edge:    #94a3b8;
+  --canvas-dot:     #cbd5e1;
+
+  /* Status */
+  --green:          #16a34a;
+  --green-bg:       #dcfce7;
+  --green-pill:     #22c55e;
+  --red:            #dc2626;
+  --red-bg:         #fee2e2;
+  --red-pill:       #ef4444;
+  --amber:          #d97706;
+  --amber-bg:       #fef3c7;
+
+  /* Fonts */
+  --font-body: 'Inter', 'DM Sans', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Fira Code', monospace;
+}
+
+/* ── Reset ────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  width: 100%; height: 100%;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+
+/* ── Canvas background ────────────────────────────────────────── */
+.react-flow__renderer,
+.react-flow__pane { background: #f4f6f8; }
+
+/* ── Edges — FlowEdge component handles all styling inline ────── */
+/* Fallback for any non-custom edges (e.g. newly connected) */
+.react-flow__edge-path {
+  stroke: var(--static-edge);
+  stroke-width: 1.5px;
+  fill: none;
+}
+
+/* Animated dash keyframe used by FlowEdge animated variant */
+@keyframes flowEdgeDash { to { stroke-dashoffset: -18; } }
+
+/* ── Handles ──────────────────────────────────────────────────── */
+.react-flow__handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: var(--accent) !important;
+  border: 2px solid #fff !important;
+  border-radius: 50% !important;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.react-flow__node:hover .react-flow__handle { opacity: 1; }
+
+/* ── Controls ─────────────────────────────────────────────────── */
+.react-flow__controls {
+  background: #fff !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10) !important;
+}
+.react-flow__controls-button {
+  background: #fff !important;
+  border-bottom: 1px solid var(--border) !important;
+  fill: var(--text-muted) !important;
+}
+.react-flow__controls-button:hover {
+  background: #f9fafb !important;
+  fill: var(--text-primary) !important;
+}
+
+/* ── Minimap ──────────────────────────────────────────────────── */
+.react-flow__minimap {
+  background: #fff !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+
+.react-flow__attribution {
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  font-size: 9px !important;
+}
+
+/* ── Node wrapper — strip ReactFlow defaults ──────────────────── */
+.react-flow__node {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* Selection ring using accent colour */
+.react-flow__node.selected > div:first-child {
+  box-shadow: 0 0 0 2px var(--accent), 0 4px 20px rgba(0,0,0,0.12) !important;
+}
+
+/* ── Animations ───────────────────────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}

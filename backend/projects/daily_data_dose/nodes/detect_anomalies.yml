@@ -1,0 +1,23 @@
+id: detect_anomalies
+label: Anomaly Detect
+description: "Z-score > {z_threshold}"
+node_type: anomaly
+icon: "🔍"
+
+params:
+  z_threshold:
+    type: float
+    default: 2.5
+    description: Z-score threshold above which a value is flagged
+
+report:
+  headline:
+    label: Anomalies
+    expr: "anomalies_found"
+    unit: rows
+  stats:
+    - {key: total_rows,      label: Total rows, expr: "total_rows"}
+    - {key: anomalies_found, label: Flagged,    expr: "anomalies_found"}
+    - {key: anomaly_rate,    label: Rate %,     expr: "round(anomalies_found / total_rows * 100, 1) if total_rows else 0"}
+  detail:
+    - anomalies

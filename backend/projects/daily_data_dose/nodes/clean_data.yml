@@ -1,0 +1,18 @@
+id: clean_data
+label: Clean Data
+description: Drop rows with null values
+node_type: default
+icon: "🧹"
+
+params: {}
+
+report:
+  headline:
+    label: Drop rate
+    expr: "round(dropped / rows_in * 100, 1) if rows_in else 0"
+    unit: "%"
+  stats:
+    - {key: rows_in,  label: In,      expr: "rows_in"}
+    - {key: rows_out, label: Out,      expr: "rows_out"}
+    - {key: dropped,  label: Dropped,  expr: "dropped"}
+  detail: []

@@ -1,0 +1,18 @@
+id: compute_averages
+label: Compute Averages
+description: Mean / min / max / std per column
+node_type: averages
+icon: "📊"
+
+params: {}
+
+report:
+  headline:
+    label: Avg Temp
+    expr: "column_stats['temperature_c']['mean']"
+    unit: "°C"
+  stats:
+    - {key: columns_computed, label: Columns, expr: "columns_computed"}
+    - {key: sample_size,      label: Rows,    expr: "sample_size"}
+  detail:
+    - column_stats

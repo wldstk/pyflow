@@ -1,0 +1,14 @@
+{
+  "id": "daily_data_dose",
+  "name": "Daily Data Dose",
+  "description": "Hourly weather metrics — load, parse, clean, analyse, report",
+  "icon": "🌤",
+  "order": 1,
+  "theme": {
+    "primary": "#2563eb",
+    "primaryDim": "#dbeafe",
+    "animatedEdge": "#16a34a",
+    "staticEdge": "#94a3b8",
+    "canvasDot": "#cbd5e1"
+  }
+}

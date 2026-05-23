@@ -1,0 +1,18 @@
+id: summary
+label: Summary
+description: Final report — averages + anomaly count
+node_type: output
+icon: "📋"
+
+params: {}
+
+report:
+  headline:
+    label: Columns reported
+    expr: "len(summary_rows)"
+    unit: metrics
+  stats:
+    - {key: columns,   label: Columns,   expr: "len(summary_rows)"}
+    - {key: anomalies, label: Anomalies, expr: "anomaly_count"}
+  detail:
+    - summary_rows

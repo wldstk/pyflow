@@ -1,0 +1,38 @@
+# HOW TO CREATE A NEW PROJECT
+#
+# 1. Copy this directory:
+#      cp -r backend/projects/_template backend/projects/<your_id>
+#
+# 2. Edit project.json  - set id, name, description, icon, theme
+#
+# 3. Add your data file to data/
+#
+# 4. For each pipeline step, create two files in nodes/:
+#      <step>.yml  - node spec  (label, params, report section)
+#      <step>.py   - run(inputs, params) -> dict  (pure logic)
+#    Copy nodes/step1.yml + nodes/step1.py as your starting point.
+#
+# 5. Wire the steps below and describe the edges.
+#    Restart the backend — it auto-discovers pipeline.yml projects.
+#
+# PIPELINE WIRING
+#
+# input_from: "1"           - take all outputs from node "1"
+# input_from: ["4", "5"]    - merge outputs from nodes "4" and "5"
+# (omit input_from on source nodes that have no predecessors)
+
+nodes:
+  - id: "1"
+    spec: step1 # maps to nodes/step1.yml + nodes/step1.py
+    position: { x: 50, y: 220 }
+    params:
+      filename: sample.csv # overrides the default in step1.yml
+
+  # Following node/id
+  # - id: "2"
+  #   spec: step2
+  #   position: {x: 320, y: 220}
+  #   input_from: "1"
+
+edges: []
+  # - {id: e1-2, source: "1", target: "2", animated: true}

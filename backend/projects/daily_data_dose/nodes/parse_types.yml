@@ -1,0 +1,17 @@
+id: parse_types
+label: Parse Types
+description: Cast strings → float
+node_type: default
+icon: "🔤"
+
+params: {}
+
+report:
+  headline:
+    label: Parse errors
+    expr: "parse_errors"
+    unit: fields
+  stats:
+    - {key: rows_parsed,  label: Rows parsed,  expr: "rows_parsed"}
+    - {key: parse_errors, label: Parse errors,  expr: "parse_errors"}
+  detail: []

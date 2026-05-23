@@ -1,0 +1,21 @@
+id: load_csv
+label: Load CSV
+description: "Source: {filename}"
+node_type: input
+icon: "📄"
+
+params:
+  filename:
+    type: str
+    default: weather.csv
+    description: CSV filename inside the project data/ directory
+
+report:
+  headline:
+    label: Rows loaded
+    expr: "len(rows)"
+    unit: rows
+  stats:
+    - {key: rows,    label: Rows,    expr: "len(rows)"}
+    - {key: columns, label: Columns, expr: "len(columns)"}
+  detail: []
