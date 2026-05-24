@@ -79,15 +79,12 @@ def _get_order(entry: _ProjectEntry) -> int:
     return config.order if isinstance(config, ProjectConfig) else 99
 
 
-PROJECTS: dict[str, _ProjectEntry] = _discover_projects()
-DEFAULT_PROJECT: str | None = next(iter(PROJECTS), None)
-
-
 @app.route("/api/projects", methods=["GET"])
 def get_projects() -> Response:
+    projects = _discover_projects()
     configs = [
         entry["config"].model_dump()
-        for entry in PROJECTS.values()
+        for entry in projects.values()
         if isinstance(entry["config"], ProjectConfig)
     ]
     return jsonify(configs)
@@ -95,19 +92,11 @@ def get_projects() -> Response:
 
 @app.route("/api/pipeline", methods=["GET"])
 def get_pipeline() -> tuple[Response, int] | Response:
-    project_id = request.args.get("project", DEFAULT_PROJECT)
-    if not project_id or project_id not in PROJECTS:
-        return (
-            jsonify(
-                {
-                    "error": (
-                        f"Unknown project '{project_id}'. " f"Available: {list(PROJECTS.keys())}"
-                    )
-                }
-            ),
-            404,
-        )
-    entry = PROJECTS[project_id]
+    projects = _discover_projects()
+    project_id = request.args.get("project") or next(iter(projects), None)
+    if not project_id or project_id not in projects:
+        return jsonify({"error": f"Unknown project '{project_id}'."}), 404
+    entry = projects[project_id]
     project_dir = entry["dir"]
     if not isinstance(project_dir, Path):
         return jsonify({"error": "Invalid project directory"}), 500
@@ -121,13 +110,11 @@ def get_pipeline() -> tuple[Response, int] | Response:
 
 @app.route("/api/pipeline/stream", methods=["GET"])
 def stream_pipeline() -> tuple[Response, int] | Response:
-    project_id = request.args.get("project", DEFAULT_PROJECT)
-    if not project_id or project_id not in PROJECTS:
-        return (
-            jsonify({"error": f"Unknown project '{project_id}'."}),
-            404,
-        )
-    entry = PROJECTS[project_id]
+    projects = _discover_projects()
+    project_id = request.args.get("project") or next(iter(projects), None)
+    if not project_id or project_id not in projects:
+        return jsonify({"error": f"Unknown project '{project_id}'."}), 404
+    entry = projects[project_id]
     project_dir = entry["dir"]
     if not isinstance(project_dir, Path):
         return jsonify({"error": "Invalid project directory"}), 500
@@ -169,7 +156,7 @@ def health() -> Response:
         {
             "status": "ok",
             "python": f"{sys.version_info[0]}.{sys.version_info[1]}",
-            "projects": list(PROJECTS.keys()),
+            "projects": list(_discover_projects().keys()),
         }
     )
 
@@ -177,5 +164,5 @@ def health() -> Response:
 if __name__ == "__main__":
     port = int(os.getenv("FLASK_PORT", "5000"))
     debug = os.getenv("FLASK_DEBUG", "true").lower() == "true"
-    print(f"[pyflow] Projects: {list(PROJECTS.keys())}")
+    print(f"[pyflow] Starting on port {port}")
     app.run(host="0.0.0.0", port=port, debug=debug, threaded=True)

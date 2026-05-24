@@ -212,7 +212,12 @@ def run_streaming(project_dir: Path) -> Generator[dict[str, Any], None, None]:
         position = node_def.get("position", {"x": 0, "y": 0})
         try:
             spec = node_runner.load_spec(nodes_dir, spec_name)
-            node_type, label, description, icon = spec.node_type, spec.label, spec.description, spec.icon
+            node_type, label, description, icon = (
+                spec.node_type,
+                spec.label,
+                spec.description,
+                spec.icon,
+            )
         except Exception:
             node_type, label, description, icon = "default", spec_name, "", ""
 
