@@ -75,10 +75,10 @@ const s = {
   }),
 };
 
-export default function Toolbar({ loading, backendOk, lastFetch, onRefresh, projects, selectedProject, onProjectChange }) {
+export default function Toolbar({ loading, backendOk, lastFetch, onRefresh, projects, selectedProject, onProjectChange, autoRun }) {
   const tsLabel = lastFetch
     ? `last run ${lastFetch.toLocaleTimeString()}`
-    : 'not yet run';
+    : autoRun ? 'not yet run' : 'manual run';
 
   return (
     <header style={s.bar}>
@@ -93,6 +93,14 @@ export default function Toolbar({ loading, backendOk, lastFetch, onRefresh, proj
 
       <div style={s.spacer} />
 
+      {!autoRun && (
+        <span style={{
+          fontSize: '10px', color: '#9ca3af', padding: '2px 7px',
+          border: '1px solid #e5e7eb', borderRadius: '20px', flexShrink: 0,
+        }}>
+          manual
+        </span>
+      )}
       <span style={s.ts}>{tsLabel}</span>
 
       <div style={s.statusPill(backendOk)}>

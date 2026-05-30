@@ -8,12 +8,13 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-import nodeTypes       from './nodes';
-import FlowEdge        from './edges/FlowEdge';
-import { usePipeline } from './hooks/usePipeline';
-import { useProjects } from './hooks/useProjects';
-import Toolbar         from './components/Toolbar';
-import ErrorBanner     from './components/ErrorBanner';
+import nodeTypes                    from './nodes';
+import FlowEdge                     from './edges/FlowEdge';
+import { usePipeline }              from './hooks/usePipeline';
+import { useProjects }              from './hooks/useProjects';
+import Toolbar                      from './components/Toolbar';
+import ErrorBanner                  from './components/ErrorBanner';
+import { PipelineContext }          from './context/PipelineContext';
 
 const edgeTypes = { flowEdge: FlowEdge };
 
@@ -47,18 +48,19 @@ export default function App() {
   }, [projects, selectedProject]);
 
   // Apply project theme to CSS vars on switch
+  const selectedConfig = projects.find(p => p.id === selectedProject);
   useEffect(() => {
-    if (!selectedProject || !projects.length) return;
-    const proj = projects.find(p => p.id === selectedProject);
-    if (proj?.theme) applyTheme(proj.theme);
-  }, [selectedProject, projects]);
+    if (selectedConfig?.theme) applyTheme(selectedConfig.theme);
+  }, [selectedConfig]);
+
+  const autoRun = selectedConfig?.auto_run !== false; // default true
 
   const {
     nodes, edges,
     onNodesChange, onEdgesChange,
     loading, error, lastFetch,
-    refetch,
-  } = usePipeline(selectedProject);
+    refetch, runFromNode, runSingleNode,
+  } = usePipeline(selectedProject, autoRun);
 
   const backendOk = error ? false : lastFetch ? true : null;
 
@@ -72,6 +74,7 @@ export default function App() {
   };
 
   return (
+    <PipelineContext.Provider value={{ runFromNode, runSingleNode }}>
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Toolbar
         loading={loading}
@@ -81,6 +84,7 @@ export default function App() {
         projects={projects}
         selectedProject={selectedProject}
         onProjectChange={handleProjectChange}
+        autoRun={autoRun}
       />
 
       {error ? (
@@ -116,5 +120,6 @@ export default function App() {
         </div>
       )}
     </div>
+    </PipelineContext.Provider>
   );
 }

@@ -189,15 +189,66 @@ def run(project_dir: Path) -> PipelineGraph:
     return PipelineGraph(nodes=rf_nodes, edges=rf_edges)
 
 
+def pending_graph(project_dir: Path) -> dict[str, Any]:
+    """Return the graph structure with every node in 'pending' state — no execution."""
+    pipeline_path = project_dir / "pipeline.yml"
+    nodes_dir = project_dir / "nodes"
+
+    config = _load_config(project_dir)
+    theme = config.theme
+
+    with open(pipeline_path, encoding="utf-8") as f:
+        raw_pipeline: Any = yaml.safe_load(f)
+
+    node_defs: list[dict[str, Any]] = raw_pipeline.get("nodes", [])
+    edge_defs: list[dict[str, Any]] = raw_pipeline.get("edges", [])
+
+    rf_nodes: list[dict[str, Any]] = []
+    for node_def in node_defs:
+        node_id = str(node_def["id"])
+        spec_name: str = node_def["spec"]
+        position = node_def.get("position", {"x": 0, "y": 0})
+        try:
+            spec = node_runner.load_spec(nodes_dir, spec_name)
+            node_type, label, description, icon = spec.node_type, spec.label, spec.description, spec.icon
+        except Exception:
+            node_type, label, description, icon = "default", spec_name, "", ""
+
+        rf_nodes.append(
+            RFNode(
+                id=node_id,
+                type=node_type,
+                position=Position(x=float(position.get("x", 0)), y=float(position.get("y", 0))),
+                data=NodeData(
+                    label=label, description=description, status="pending",
+                    stats={}, headline=None, detail={}, icon=icon, elapsed_ms=None,
+                ),
+            ).model_dump()
+        )
+
+    rf_edges = _build_edges(edge_defs, {}, theme.animatedEdge, theme.staticEdge)
+    return {"nodes": rf_nodes, "edges": rf_edges}
+
+
 def run_streaming(
     project_dir: Path,
     on_event: Any | None = None,
+    from_node_id: str | None = None,
+    only_node_id: str | None = None,
+    initial_outputs: dict[str, dict[str, Any]] | None = None,
+    outputs_collector: dict[str, dict[str, Any]] | None = None,
 ) -> Generator[dict[str, Any], None, None]:
     """Yield SSE event dicts as the pipeline executes node by node.
 
-    on_event — optional side-channel callback for events that cannot be
-               yielded mid-execution (e.g. tqdm progress ticks).  Called
-               with the same event dict structure as the generator yields.
+    on_event         — side-channel callback for tqdm progress ticks.
+    from_node_id     — start emitting from this node; silently satisfy
+                       upstream inputs via cache or silent re-run.
+    only_node_id     — run exactly this one node; all others are skipped
+                       (upstream inputs come from cache / silent re-run;
+                       downstream nodes are not touched at all).
+    initial_outputs  — cached payloads keyed by node_id.
+    outputs_collector — populated with each executed node's payload so
+                        the caller can persist the cache.
     """
     pipeline_path = project_dir / "pipeline.yml"
     nodes_dir = project_dir / "nodes"
@@ -248,14 +299,32 @@ def run_streaming(
             ).model_dump()
         )
 
+    # Determine which node IDs will emit SSE events.
+    if only_node_id:
+        active_ids = {only_node_id}
+    elif from_node_id:
+        active_ids = set()
+        reached = False
+        for nd in node_defs:
+            if str(nd["id"]) == from_node_id:
+                reached = True
+            if reached:
+                active_ids.add(str(nd["id"]))
+    else:
+        active_ids = {str(nd["id"]) for nd in node_defs}
+
+    partial = bool(only_node_id or from_node_id)
+    pending_nodes = [n for n in rf_nodes_init if n["id"] in active_ids]
+
     yield {
         "type": "init",
-        "nodes": rf_nodes_init,
+        "partial": partial,
+        "nodes": pending_nodes if partial else rf_nodes_init,
         "edges": _build_edges(edge_defs, {}, animated_color, static_color),
     }
 
-    # Execute nodes sequentially, streaming status updates
-    node_outputs: dict[str, dict[str, Any]] = {}
+    # Seed outputs from cache so upstream nodes don't need re-execution.
+    node_outputs: dict[str, dict[str, Any]] = dict(initial_outputs or {})
 
     for node_def in node_defs:
         node_id = str(node_def["id"])
@@ -271,10 +340,17 @@ def run_streaming(
             for s in src:
                 inputs.update(node_outputs.get(str(s), {}))
 
+        if node_id not in active_ids:
+            # Not in the active set: supply inputs to downstream via cache
+            # or silent execution, but never emit SSE events.
+            if node_id not in node_outputs:
+                result = _safe_execute(nodes_dir, spec_name, inputs, params)
+                node_outputs[node_id] = result.payload
+            continue
+
+        # ── Active node: emit full SSE events ──────────────────
         yield {"type": "node_update", "node_id": node_id, "data": {"status": "running"}}
 
-        # Build a progress callback that fires tqdm updates directly into
-        # on_event (bypassing the generator, which is blocked during execution).
         def _on_progress(_nid=node_id, **kw: Any) -> None:
             if on_event:
                 on_event({"type": "node_progress", "node_id": _nid, "data": kw})
@@ -284,6 +360,10 @@ def run_streaming(
 
         rf_node = _build_rf_node(node_id, position, result)
         yield {"type": "node_update", "node_id": node_id, "data": rf_node.data.model_dump()}
+
+    # Expose final outputs to the caller for caching.
+    if outputs_collector is not None:
+        outputs_collector.update(node_outputs)
 
     yield {
         "type": "pipeline_done",

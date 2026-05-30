@@ -21,6 +21,7 @@
 
 import React, { memo, useState } from 'react';
 import { Handle, Position } from 'reactflow';
+import { usePipelineContext } from '../context/PipelineContext';
 import {
   STATUS,
   nodeBase, nodeHeader, nodeBody,
@@ -208,9 +209,11 @@ function ProgressBar({ pct, eta, desc }) {
 
 // ── Main component ─────────────────────────────────────────────
 
-function GenericNode({ data, type }) {
+function GenericNode({ id, data, type }) {
   const { label, description, status = 'pending', stats = {}, headline, detail = {}, icon = '', elapsed_ms, progress } = data;
   const [showDetail, setShowDetail] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const { runSingleNode } = usePipelineContext();
 
   const hasLeft    = type !== 'input';
   const hasRight   = type !== 'output';
@@ -223,15 +226,19 @@ function GenericNode({ data, type }) {
   const statEntries = Object.entries(stats);
 
   return (
-    <div style={nodeBase(status)}>
+    <div
+      style={nodeBase(status)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       {hasLeft  && <Handle type="target" position={Position.Left}  />}
       {hasRight && <Handle type="source" position={Position.Right} />}
 
       {/* ── Header ── */}
       <div style={{
         ...nodeHeader,
-        background:     alertActive ? '#fef3c7' : nodeHeader.background,
-        borderBottom:   `1px solid ${alertActive ? '#fde68a' : '#f0f2f5'}`,
+        background:   alertActive ? '#fef3c7' : nodeHeader.background,
+        borderBottom: `1px solid ${alertActive ? '#fde68a' : '#f0f2f5'}`,
       }}>
         <div style={statusDot(status)} className={status === 'running' ? 'status-dot-pulse' : ''} />
         {icon && (
@@ -248,12 +255,31 @@ function GenericNode({ data, type }) {
             {elapsed_ms}ms
           </span>
         )}
+        {/* Run single-node button — visible on hover, top-right of header */}
+        {hovered && runSingleNode && status !== 'running' && (
+          <button
+            onClick={(e) => { e.stopPropagation(); runSingleNode(id); }}
+            title="Run this node only"
+            style={{
+              marginLeft: elapsed_ms != null ? '4px' : 'auto',
+              background: 'var(--accent, #2563eb)',
+              border: 'none', borderRadius: '4px',
+              color: '#fff', cursor: 'pointer',
+              fontSize: '9px', fontWeight: 700,
+              padding: '2px 6px', lineHeight: 1.4,
+              flexShrink: 0,
+            }}
+          >
+            ▶
+          </button>
+        )}
         {hasDetail && (
           <button
             onClick={() => setShowDetail(v => !v)}
             title={showDetail ? 'Collapse' : 'Expand detail'}
             style={{
-              marginLeft: 'auto', background: 'none', border: 'none',
+              marginLeft: (hovered && runSingleNode) ? '4px' : 'auto',
+              background: 'none', border: 'none',
               cursor: 'pointer', padding: '2px', color: '#9ca3af', lineHeight: 1,
               fontSize: '10px', flexShrink: 0,
             }}

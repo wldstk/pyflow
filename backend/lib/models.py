@@ -143,4 +143,5 @@ class ProjectConfig(BaseModel):
     description: str = ""
     icon: str = ""
     order: int = 99
+    auto_run: bool = True
     theme: ProjectTheme = ProjectTheme()
