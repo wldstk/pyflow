@@ -32,8 +32,12 @@ _runs: dict[str, dict] = {}
 
 def _execute_run(run_id: str, project_dir: Path) -> None:
     run = _runs[run_id]
+
+    def _on_event(event: dict) -> None:
+        run["queue"].append(event)
+
     try:
-        for event in run_streaming(project_dir):
+        for event in run_streaming(project_dir, on_event=_on_event):
             run["queue"].append(event)
     except Exception as exc:
         traceback.print_exc()

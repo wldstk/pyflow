@@ -68,6 +68,7 @@ def execute(
     spec_name: str,
     inputs: dict[str, Any],
     params_override: dict[str, Any] | None = None,
+    on_progress: Any | None = None,
 ) -> NodeResult:
     """
     Load the spec YAML and implementation, execute run(inputs, params),
@@ -93,6 +94,8 @@ def execute(
     mod = importlib.util.module_from_spec(mod_spec)
     mod_spec.loader.exec_module(mod)  # type: ignore[union-attr]
 
+    import pyflow as _pf  # local import keeps lib/ dependency-free at module level
+    _pf._set_callback(on_progress)
     try:
         t0 = time.perf_counter()
         outputs: dict[str, Any] = mod.run(inputs=inputs, params=params)  # type: ignore[attr-defined]
@@ -111,6 +114,8 @@ def execute(
             payload={},
             detail={},
         )
+    finally:
+        _pf._clear_callback()
 
     # ── Build report from spec ─────────────────────────────────
     report = spec.report

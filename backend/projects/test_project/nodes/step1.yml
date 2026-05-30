@@ -1,0 +1,38 @@
+# <step_name>.yml — Node spec template
+#
+# id          unique snake_case identifier (matches filename)
+# label       display name shown on the canvas card
+# description one-line description; use {param_name} for substitution
+# node_type   input | default | averages | anomaly | output
+#
+# params      key/value pairs with type + default + description
+#             these can be overridden per-node in pipeline.yml
+#
+# report
+#   headline  the large KPI shown on the card
+#             expr is evaluated against the run() output dict
+#   stats     list of small key/value badges (up to ~4 visible)
+#   detail    output fields passed through to the frontend detail panel
+#             (column_stats, anomalies, summary, etc.)
+
+id: step1
+label: Step 1
+description: "Source: {filename}"
+node_type: input
+icon: "📄"
+
+params:
+  filename:
+    type: str
+    default: sample.csv
+    description: Input CSV filename (relative to the project data/ directory)
+
+report:
+  headline:
+    label: Rows loaded
+    expr: "len(rows)"
+    unit: rows
+  stats:
+    - { key: rows, label: Rows, expr: "len(rows)" }
+    - { key: columns, label: Columns, expr: "len(columns)" }
+  detail: []

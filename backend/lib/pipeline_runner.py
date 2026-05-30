@@ -54,9 +54,10 @@ def _safe_execute(
     spec_name: str,
     inputs: dict[str, Any],
     params: dict[str, Any],
+    on_progress: Any | None = None,
 ) -> NodeResult:
     try:
-        return node_runner.execute(nodes_dir, spec_name, inputs, params)
+        return node_runner.execute(nodes_dir, spec_name, inputs, params, on_progress=on_progress)
     except Exception as exc:
         traceback.print_exc()
         return NodeResult(
@@ -188,8 +189,16 @@ def run(project_dir: Path) -> PipelineGraph:
     return PipelineGraph(nodes=rf_nodes, edges=rf_edges)
 
 
-def run_streaming(project_dir: Path) -> Generator[dict[str, Any], None, None]:
-    """Yield SSE event dicts as the pipeline executes node by node."""
+def run_streaming(
+    project_dir: Path,
+    on_event: Any | None = None,
+) -> Generator[dict[str, Any], None, None]:
+    """Yield SSE event dicts as the pipeline executes node by node.
+
+    on_event — optional side-channel callback for events that cannot be
+               yielded mid-execution (e.g. tqdm progress ticks).  Called
+               with the same event dict structure as the generator yields.
+    """
     pipeline_path = project_dir / "pipeline.yml"
     nodes_dir = project_dir / "nodes"
 
@@ -264,7 +273,13 @@ def run_streaming(project_dir: Path) -> Generator[dict[str, Any], None, None]:
 
         yield {"type": "node_update", "node_id": node_id, "data": {"status": "running"}}
 
-        result = _safe_execute(nodes_dir, spec_name, inputs, params)
+        # Build a progress callback that fires tqdm updates directly into
+        # on_event (bypassing the generator, which is blocked during execution).
+        def _on_progress(_nid=node_id, **kw: Any) -> None:
+            if on_event:
+                on_event({"type": "node_progress", "node_id": _nid, "data": kw})
+
+        result = _safe_execute(nodes_dir, spec_name, inputs, params, on_progress=_on_progress)
         node_outputs[node_id] = result.payload
 
         rf_node = _build_rf_node(node_id, position, result)

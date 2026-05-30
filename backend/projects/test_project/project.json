@@ -1,0 +1,14 @@
+{
+  "id": "test_project",
+  "name": "Test project name",
+  "description": "Test project name pipeline",
+  "icon": "🔧",
+  "order": 100,
+  "theme": {
+    "primary": "#0891b2",
+    "primaryDim": "#cffafe",
+    "animatedEdge": "#0891b2",
+    "staticEdge": "#67e8f9",
+    "canvasDot": "#cffafe"
+  }
+}

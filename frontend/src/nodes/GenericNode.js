@@ -170,10 +170,46 @@ function TopicStatsTable({ stats }) {
   );
 }
 
+// ── Progress bar ───────────────────────────────────────────────
+
+function ProgressBar({ pct, eta, desc }) {
+  const fmtEta = (s) => {
+    if (s == null) return null;
+    return s < 60 ? `${s}s` : `${Math.round(s / 60)}m ${Math.round(s % 60)}s`;
+  };
+
+  return (
+    <div style={{ marginTop: '8px' }}>
+      {desc && (
+        <div style={{ fontSize: '10px', color: '#8a95a3', marginBottom: '3px', fontWeight: 500 }}>
+          {desc}
+        </div>
+      )}
+      <div style={{ height: '4px', background: '#f0f2f5', borderRadius: '4px', overflow: 'hidden' }}>
+        <div style={{
+          height: '100%',
+          width: `${pct ?? 0}%`,
+          background: '#f59e0b',
+          borderRadius: '4px',
+          transition: 'width 0.2s ease',
+        }} />
+      </div>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between',
+        marginTop: '3px', fontSize: '10px',
+        color: '#9ca3af', fontFamily: 'var(--font-mono)',
+      }}>
+        <span>{pct != null ? `${pct}%` : '—'}</span>
+        {fmtEta(eta) && <span>ETA {fmtEta(eta)}</span>}
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────
 
 function GenericNode({ data, type }) {
-  const { label, description, status = 'pending', stats = {}, headline, detail = {}, icon = '', elapsed_ms } = data;
+  const { label, description, status = 'pending', stats = {}, headline, detail = {}, icon = '', elapsed_ms, progress } = data;
   const [showDetail, setShowDetail] = useState(false);
 
   const hasLeft    = type !== 'input';
@@ -230,9 +266,14 @@ function GenericNode({ data, type }) {
       {/* ── Body ── */}
       <div style={nodeBody}>
         {description && (
-          <div style={{ ...descStyle, marginBottom: headline ? '8px' : '0' }}>
+          <div style={{ ...descStyle, marginBottom: (progress || headline) ? '8px' : '0' }}>
             <span style={{ fontSize: '11px', color: '#8a95a3' }}>{description}</span>
           </div>
+        )}
+
+        {/* tqdm progress bar — only while running */}
+        {status === 'running' && progress && (
+          <ProgressBar pct={progress.pct} eta={progress.eta} desc={progress.desc} />
         )}
 
         {/* Headline KPI */}

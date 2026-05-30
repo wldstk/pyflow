@@ -1,4 +1,7 @@
+import time
 from typing import Any
+
+from pyflow import tqdm
 
 NUMERIC_COLS: list[str] = [
     "temperature_c",
@@ -8,11 +11,21 @@ NUMERIC_COLS: list[str] = [
     "rainfall_mm",
 ]
 
+_DEMO_SECONDS = 10
+
 
 def run(inputs: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
     parsed: list[dict[str, Any]] = []
     errors = 0
-    for raw in inputs.get("rows", []):
+
+    rows = inputs.get("rows", [])
+    steps = 100
+    interval = _DEMO_SECONDS / steps
+
+    for _ in tqdm(range(steps), desc="Parsing types"):
+        time.sleep(interval)
+
+    for raw in rows:
         row: dict[str, Any] = dict(raw)
         for col in NUMERIC_COLS:
             val = row.get(col)
@@ -26,4 +39,5 @@ def run(inputs: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
                 row[col] = None
                 errors += 1
         parsed.append(row)
+
     return {"rows": parsed, "rows_parsed": len(parsed), "parse_errors": errors}

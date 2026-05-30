@@ -51,10 +51,21 @@ export function usePipeline(projectId) {
       setEdges((initEdges ?? []).map(edge => withEdgeColor(edge, '#94a3b8')));
     });
 
-    es.addEventListener('node_update', (e) => {
+    es.addEventListener('node_progress', (e) => {
       const { node_id, data } = JSON.parse(e.data);
       setNodes((prev) =>
-        prev.map((n) => n.id === node_id ? { ...n, data: { ...n.data, ...data } } : n)
+        prev.map((n) => n.id === node_id ? { ...n, data: { ...n.data, progress: data } } : n)
+      );
+    });
+
+    es.addEventListener('node_update', (e) => {
+      const { node_id, data } = JSON.parse(e.data);
+      // Clear any in-flight progress bar when the node finishes.
+      const patch = (data.status === 'done' || data.status === 'error')
+        ? { ...data, progress: null }
+        : data;
+      setNodes((prev) =>
+        prev.map((n) => n.id === node_id ? { ...n, data: { ...n.data, ...patch } } : n)
       );
       // Sync outgoing edge colours with the source node's new status.
       if (data.status === 'running') {
