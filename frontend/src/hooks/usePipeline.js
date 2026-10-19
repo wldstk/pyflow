@@ -39,7 +39,7 @@ export function usePipeline(projectId) {
     // EventSource must bypass the CRA dev-server proxy: it buffers the entire
     // SSE response and delivers it all at once when the stream closes.
     // Calling the backend directly works because Flask-CORS allows all origins.
-    const backendBase = process.env.REACT_APP_BACKEND_URL ?? 'http://localhost:5000';
+    const backendBase = import.meta.env.REACT_APP_BACKEND_URL ?? 'http://localhost:5000';
     const es = new EventSource(`${backendBase}/api/pipeline/stream?project=${projectId}`);
     esRef.current = es;
 
